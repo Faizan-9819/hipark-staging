@@ -47,6 +47,6 @@ jspm_packages/
 Thumbs.db
 
 # Lock files (optional, depending on your workflow)
-package-lock.json
+# package-lock.json is committed so Vercel installs the same versions as local
 yarn.lock
 pnpm-lock.yaml
