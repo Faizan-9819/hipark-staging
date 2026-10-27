@@ -9,6 +9,8 @@ import { motion, AnimatePresence } from "framer-motion";
 //   survives closing the browser, so it's used for the 5-day gap.
 // - SESSION_KEY (sessionStorage) marks the current visit as a popup visit, and
 //   is cleared automatically when the tab/browser is closed.
+// Closing the popup ends the popup visit and restarts the 5-day gap, so it
+// won't open again on any page until 5 days have passed.
 const STORAGE_KEY = "hiparks_gresb_popup_last_shown";
 const SESSION_KEY = "hiparks_gresb_popup_session";
 const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
@@ -49,9 +51,25 @@ const shouldShowOnThisPage = () => {
   }
 };
 
+// Called when the visitor closes the popup: stop showing it on other pages and
+// start the 5-day gap from now
+const markDismissed = () => {
+  try {
+    sessionStorage.removeItem(SESSION_KEY);
+    localStorage.setItem(STORAGE_KEY, String(Date.now()));
+  } catch {
+    // Storage blocked - nothing to remember
+  }
+};
+
 const GresbPopup = () => {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
+
+  const close = () => {
+    markDismissed();
+    setIsOpen(false);
+  };
 
   // Re-check on every page change, so during a popup visit it opens on each page
   useEffect(() => {
@@ -64,7 +82,7 @@ const GresbPopup = () => {
   // Close on Escape and lock background scroll while open
   useEffect(() => {
     if (!isOpen) return;
-    const onKeyDown = (e) => e.key === "Escape" && setIsOpen(false);
+    const onKeyDown = (e) => e.key === "Escape" && close();
     const prevOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
     window.addEventListener("keydown", onKeyDown);
@@ -83,7 +101,7 @@ const GresbPopup = () => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          onClick={() => setIsOpen(false)}
+          onClick={close}
         >
           <motion.div
             role="dialog"
@@ -107,7 +125,7 @@ const GresbPopup = () => {
             <button
               type="button"
               aria-label="Close popup"
-              onClick={() => setIsOpen(false)}
+              onClick={close}
               className="absolute flex items-center justify-center cursor-pointer"
               style={{
                 top: u(14),

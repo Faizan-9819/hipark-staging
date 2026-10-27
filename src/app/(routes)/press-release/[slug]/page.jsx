@@ -77,7 +77,7 @@ import PDContent from "../components/PDContent";
 import { formatMediaUrl } from "@/src/utils/formatMediaUrl";
 import { notFound } from "next/navigation";
 import JsonLd from "@/components/global/JsonLd";
-import { pressReleaseGraph } from "@/src/lib/schema";
+import { fetchPlacePaths, pressReleaseGraph } from "@/src/lib/schema";
 
 // Dynamic metadata — Next.js 16 App Router way
 export async function generateMetadata({ params }) {
@@ -157,9 +157,11 @@ export default async function PressReleasePage({ params }) {
     ? relatedResult.data || []
     : [];
 
+  const placePaths = await fetchPlacePaths();
+
   return (
     <ReactLenis root>
-      <JsonLd graph={pressReleaseGraph(pressRelease)} />
+      <JsonLd graph={pressReleaseGraph(pressRelease, placePaths)} />
       <div className="w-full min-h-screen bg-white">
         <PDHero pressRelease={pressRelease} />
         <PDContent

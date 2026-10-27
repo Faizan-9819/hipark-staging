@@ -16,7 +16,7 @@ const page = () => {
     <>
       <JsonLd graph={simplePageGraph({ path: "/leadership", name: metadata.title, crumb: "Leadership" })} />
       <div className="overflow-hidden">
-        <TeamSecF />
+        <TeamSecF isPageHeading />
       </div>
     </>
   );

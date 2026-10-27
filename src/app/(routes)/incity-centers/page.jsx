@@ -2,7 +2,7 @@ import Incity_Park_Wrapper from "@/components/incity_park/Incity_Park_Wrapper";
 import React from "react";
 import JsonLd from "@/components/global/JsonLd";
 import {
-  ORG_ID,
+  ORG_REF,
   absoluteUrl,
   breadcrumbNode,
   itemListNode,
@@ -47,7 +47,7 @@ const page = async () => {
             type: "CollectionPage",
             name: metadata.title,
             description: metadata.description,
-            about: { "@id": ORG_ID },
+            about: ORG_REF,
             mainEntity: centres.length
               ? { "@id": `${absoluteUrl(PATH)}#parklist` }
               : undefined,

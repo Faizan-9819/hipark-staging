@@ -1,4 +1,6 @@
 import React from "react";
+import JsonLd from "@/components/global/JsonLd";
+import { simplePageGraph } from "@/src/lib/schema";
 import CampaignWrapper from "@/components/enquiry_campaign/CampaignWrapper";
 
 export const metadata = {
@@ -10,6 +12,7 @@ export const metadata = {
 const page = () => {
   return (
     <div>
+      <JsonLd graph={simplePageGraph({ path: "/campaign/industrial-logistics-parks-india", name: metadata.title, description: metadata.description })} />
       <CampaignWrapper />
       {/* <h1>sgdg</h1> */}
     </div>

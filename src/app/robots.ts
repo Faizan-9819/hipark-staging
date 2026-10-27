@@ -6,7 +6,8 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/_next/", "/api/"],
+        // /_next/ must stay crawlable: Google needs its JS/CSS to render pages
+        disallow: ["/api/"],
       },
     ],
     sitemap: "https://www.hiparks.com/sitemap.xml",

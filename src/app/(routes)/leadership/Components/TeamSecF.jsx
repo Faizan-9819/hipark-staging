@@ -411,8 +411,10 @@ import TeamSecDirectors from "./TeamSecDirectors";
 import TeamSecCommittees from "./TeamSecCommittees";
 import TeamSecLeadership from "./TeamSecLeadership";
 
-const TeamSecF = () => {
+const TeamSecF = ({ isPageHeading = false }) => {
   const [activeTab, setActiveTab] = useState(0);
+  const TitleTag = isPageHeading ? motion.h1 : motion.div;
+  const SubTag = isPageHeading ? motion.div : motion.h2;
 
   const tabs = ["Board of Directors", "Board Committees", "Leadership Team"];
   const tabsMob = [
@@ -512,7 +514,11 @@ const TeamSecF = () => {
         <div className="flex justify-between items-center flex-col lg:flex-row md:mb-[55px] mb-[25px] md:gap-5 gap-[0px]">
           <div className="flex flex-col lg:w-auto w-full items-start">
             <div className="flex gap-[10px] md:gap-[17px] xl:mt-0 mt-5 items-center justify-start text-[#101828] font-[Barlow] w-full md:w-fit xl:h-[96px]">
-              <motion.div
+              {/* On /leadership this is the page H1 ("Leadership & Governance")
+                  and the visible "Governance" line below is decorative for
+                  screen readers. Elsewhere (e.g. /know-us) the original
+                  div + h2 markup is kept so the page has a single H1. */}
+              <TitleTag
                 initial={{ width: 0 }}
                 whileInView={{ width: "fit-content" }}
                 transition={{ duration: 1, ease: [0.7, 0, 0.4, 1] }}
@@ -520,10 +526,12 @@ const TeamSecF = () => {
                 className="md:w-[auto] text-[35px] md:text-[45px] xl:text-[66px] overflow-hidden whitespace-nowrap bw-r tracking-[-2.64px] xl:leading-[76px] leading-[45px] md:leading-[55px]"
               >
                 Leadership &
-              </motion.div>
+                {isPageHeading && <span className="sr-only"> Governance</span>}
+              </TitleTag>
             </div>
             <div className="flex gap-[10px] md:gap-[17px] items-center">
-              <motion.h2
+              <SubTag
+                aria-hidden={isPageHeading || undefined}
                 initial={{ width: 0 }}
                 whileInView={{ width: "fit-content" }}
                 transition={{ duration: 1, ease: [0.7, 0, 0.4, 1] }}
@@ -531,7 +539,7 @@ const TeamSecF = () => {
                 className="text-[#101828] overflow-hidden whitespace-nowrap w-full bw-m text-[35px] md:text-[45px] xl:text-[66px] md:tracking-[-2.64px] xl:leading-[76px] leading-[45px] md:leading-[55px] xl:mt-[-15px]"
               >
                 Governance
-              </motion.h2>
+              </SubTag>
               <div className="xl:w-[auto] xl:h-[58px] md:w-[200px] md:h-[48px] w-[150px] overflow-hidden">
                 <motion.div
                   initial={{ width: 0 }}

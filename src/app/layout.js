@@ -146,6 +146,7 @@ import Book_Site_Button from "@/components/global/Book-site/Book_SiteButton";
 import TrackingScripts from "./TrackingScripts";
 import TelConversionTracker from "@/components/global/TelConversionTracker"; // ✅ Added Import
 import GresbPopup from "@/components/global/GresbPopup";
+import { headers } from "next/headers";
 // import CookieBanner from "@/components/global/CookieBanner";
 
 const barlow = Barlow({
@@ -161,6 +162,31 @@ const inter = Inter({
   variable: "--font-inter",
   display: "swap",
 });
+
+// Origin used for canonical URLs:
+// 1. CANONICAL_BASE_URL when set (production value lives in .env.production)
+// 2. in `next dev`, the origin the page was requested on (e.g. http://localhost:3000)
+// 3. otherwise the production domain
+async function canonicalBaseUrl() {
+  if (process.env.CANONICAL_BASE_URL) return process.env.CANONICAL_BASE_URL;
+  if (process.env.NODE_ENV === "development") {
+    const h = await headers();
+    const host = h.get("x-forwarded-host") || h.get("host") || "localhost:3000";
+    const proto = h.get("x-forwarded-proto") || "http";
+    return `${proto}://${host}`;
+  }
+  return "https://www.hiparks.com";
+}
+
+// Self-referencing canonical on every page: "./" resolves to the current
+// pathname (query strings are dropped). A page can override it with its own
+// `alternates.canonical`; src/app/not-found.js removes it from 404 pages.
+export async function generateMetadata() {
+  return {
+    metadataBase: new URL(await canonicalBaseUrl()),
+    alternates: { canonical: "./" },
+  };
+}
 
 export default function RootLayout({ children }) {
   return (

@@ -1,6 +1,6 @@
 import BrandJrnyWrapper from "@/components/brandjourney/BrandJrnyWrapper";
 import JsonLd from "@/components/global/JsonLd";
-import { simplePageGraph, ORG_ID } from "@/src/lib/schema";
+import { simplePageGraph, ORG_REF } from "@/src/lib/schema";
 
 export const metadata = {
   title: "India's Premier Grade A Industrial and Logistics Parks",
@@ -11,7 +11,7 @@ export const metadata = {
 export default function BrandJourney() {
   return (
     <>
-      <JsonLd graph={simplePageGraph({ path: "/know-us", name: metadata.title, type: "AboutPage", crumb: "About Us", mainEntity: { "@id": ORG_ID } })} />
+      <JsonLd graph={simplePageGraph({ path: "/know-us", name: metadata.title, type: "AboutPage", crumb: "About Us", mainEntity: ORG_REF })} />
       <BrandJrnyWrapper />
     </>
   );

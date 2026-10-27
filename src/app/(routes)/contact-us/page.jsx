@@ -1,7 +1,7 @@
 import ContactWrapper from "@/components/contact/ContactWrapper";
 import React from "react";
 import JsonLd from "@/components/global/JsonLd";
-import { simplePageGraph, ORG_ID } from "@/src/lib/schema";
+import { simplePageGraph, ORG_REF } from "@/src/lib/schema";
 
 export const metadata = {
   title: "Contact Horizon Industrial Parks | Logistics & Industrial India",
@@ -12,7 +12,7 @@ export const metadata = {
 const page = () => {
   return (
     <div>
-      <JsonLd graph={simplePageGraph({ path: "/contact-us", name: metadata.title, type: "ContactPage", crumb: "Contact Us", about: { "@id": ORG_ID } })} />
+      <JsonLd graph={simplePageGraph({ path: "/contact-us", name: metadata.title, type: "ContactPage", crumb: "Contact Us", about: ORG_REF })} />
       <ContactWrapper />
     </div>
   );

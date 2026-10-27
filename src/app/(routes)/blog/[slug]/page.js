@@ -1,6 +1,6 @@
 import BlogDetailWrapper from "@/components/insights/BlogDetailWrapper";
 import JsonLd from "@/components/global/JsonLd";
-import { blogPostGraph } from "@/src/lib/schema";
+import { blogPostGraph, fetchPlacePaths } from "@/src/lib/schema";
 import { notFound } from "next/navigation";
 
 export async function generateMetadata({ params }) {
@@ -76,9 +76,11 @@ export default async function BlogDetailPage({ params }) {
     relatedBlogs = latest || [];
   }
 
+  const placePaths = await fetchPlacePaths();
+
   return (
     <>
-      <JsonLd graph={blogPostGraph(blog)} />
+      <JsonLd graph={blogPostGraph(blog, placePaths)} />
       <BlogDetailWrapper slug={slug} blog={blog} relatedBlogs={relatedBlogs} />
     </>
   );

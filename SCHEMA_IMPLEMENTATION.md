@@ -12,6 +12,11 @@ This file maps every module in that spec to the pages and files in this codebase
 > - **Parks-availability pages** get WebPage + Breadcrumb only. Their CMS items aren't park pages, so there's no ItemList.
 > - **Not added on purpose:** WebSite `SearchAction` (Google retired the sitelinks search box, and `/search` is client-rendered), campaign landing pages, noindex compliance pages, and the client-rendered `/news`, `/press-releases` and `/search` listings.
 > - **Also added:** state hubs carry a `FAQPage` of their visible FAQs; press releases use `NewsArticle`; sector microblogs use `BlogPosting` (via `SectorMicroBlogDetail`); the Organization has a `hasOfferCatalog` that links to the sector `#service` nodes.
+> - **Validator fixes (2026-10-27):**
+>   - References to `#organization` / `#website` on child pages carry `@type`, `name`, `url` (and the logo for the Organization) alongside the `@id`. Validators read one page at a time and never follow an `@id` to the homepage, so a bare `{ "@id" }` left article authors/publishers nameless and showed sector `provider` as an empty `Thing`. The full Organization is still defined only on the homepage.
+>   - The park lease offer is a separate `Offer` node (`#offer`, `availableAtOrFrom` → `#place`). The spec's `Place.makesOffer` is not a schema.org property (only Organization/Person have it) and failed the Schema.org validator.
+>   - `itemOffered` is a `Service`, not a `Product`: Google treats any `Product` as a product snippet and errors without price/review/rating.
+>   - Logo is `/horizonlogo-square.png` (512×512, rendered from `public/nav/Horizon_black.svg`). The old 191×45 PNG was under Google's 112×112 minimum.
 > - Not-found branches in the blog, press-release, state-microblog and sector-microblog pages now call `notFound()` (real 404) instead of rendering a 200 "not found" message.
 
 ---

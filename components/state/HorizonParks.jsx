@@ -33,22 +33,26 @@ const HorizonParks = ({ data }) => {
                     {data.name}
                   </a>
                 </div>
-                <h2
-                  className="text-[32px] hparkhead leading-[42px] lg:leading-[66px] md:text-[45px] xl:text-[48px] 1366:text-[54px] 1440:text-[59px] xl:leading-[58px] 1366:leading-[64px] 1440:leading-[69px] flex flex-col max-h-fit justify-start bw-m lg:w-[auto] capitalize tracking-[-0.04em]"
-                  dangerouslySetInnerHTML={{ __html: data.stitle1 }}
-                ></h2>
-
-                <div className="flex gap-[10px] md:gap-[17px] flex-row xl:mt-[-15px]">
-                  <h2
-                    className="text-[32px] hparkhead leading-[33px] md:leading-[55px] md:text-[45px] xl:text-[48px] 1366:text-[54px] 1440:text-[59px] xl:leading-[58px] 1366:leading-[64px] 1440:leading-[69px] flex flex-col max-h-fit justify-start bw-r  lg:w-[auto] capitalize tracking-[-0.04em]"
-                    dangerouslySetInnerHTML={{ __html: data.stitle2 }}
-                  ></h2>
-                  <img
-                    src="/abstract_pattern.svg"
-                    className="abstract_svg mt-[2px] xl:mt-[5px]"
-                    alt="Grade A Box"
-                  />
-                </div>
+                {/* Page H1 ("Horizon Industrial Parks in <State>"). `contents`
+                    keeps the two lines laid out exactly as before. */}
+                <h1 className="contents">
+                  <span
+                    className="text-[32px] hparkhead leading-[42px] lg:leading-[66px] md:text-[45px] xl:text-[48px] 1366:text-[54px] 1440:text-[59px] xl:leading-[58px] 1366:leading-[64px] 1440:leading-[69px] flex flex-col max-h-fit justify-start bw-m lg:w-[auto] capitalize tracking-[-0.04em]"
+                    dangerouslySetInnerHTML={{ __html: data.stitle1 }}
+                  ></span>{" "}
+                  <span className="flex gap-[10px] md:gap-[17px] flex-row xl:mt-[-15px]">
+                    <span
+                      className="text-[32px] hparkhead leading-[33px] md:leading-[55px] md:text-[45px] xl:text-[48px] 1366:text-[54px] 1440:text-[59px] xl:leading-[58px] 1366:leading-[64px] 1440:leading-[69px] flex flex-col max-h-fit justify-start bw-r  lg:w-[auto] capitalize tracking-[-0.04em]"
+                      dangerouslySetInnerHTML={{ __html: data.stitle2 }}
+                    ></span>
+                    <img
+                      src="/abstract_pattern.svg"
+                      className="abstract_svg mt-[2px] xl:mt-[5px]"
+                      alt=""
+                      aria-hidden="true"
+                    />
+                  </span>
+                </h1>
               </div>
             </div>
             <div class="hidden 1024:h-auto 1024:block relative top-auto lg:bottom-[0px] lg:mt-[50px]">

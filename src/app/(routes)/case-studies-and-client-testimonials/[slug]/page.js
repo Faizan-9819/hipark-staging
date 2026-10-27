@@ -245,7 +245,7 @@
 // }
 import CaseStudyDetailWrapper from "@/components/case-studies/CaseStudyDetailWrapper";
 import JsonLd from "@/components/global/JsonLd";
-import { caseStudyGraph } from "@/src/lib/schema";
+import { caseStudyGraph, fetchPlacePaths } from "@/src/lib/schema";
 import { notFound } from "next/navigation";
 import { Metadata } from "next";
 
@@ -360,9 +360,11 @@ export default async function CaseStudyPage({ params }) {
 
   console.log("Fetched case study:".repeat(50), caseStudy);
 
+  const placePaths = await fetchPlacePaths();
+
   return (
     <>
-      <JsonLd graph={caseStudyGraph(caseStudy)} />
+      <JsonLd graph={caseStudyGraph(caseStudy, placePaths)} />
       <CaseStudyDetailWrapper data={caseStudy} slug={slug} />
     </>
   );

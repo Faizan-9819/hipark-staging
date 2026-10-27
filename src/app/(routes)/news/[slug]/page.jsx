@@ -3,7 +3,7 @@ import NDHero from "./components/NDHero";
 import NDContent from "./components/NDContent";
 import FormSec from "@/components/Factory/Formsec";
 import JsonLd from "@/components/global/JsonLd";
-import { newsGraph } from "@/src/lib/schema";
+import { fetchPlacePaths, newsGraph } from "@/src/lib/schema";
 
 // Force SSR with no caching
 export const dynamic = "force-dynamic";
@@ -113,9 +113,11 @@ export default async function MediaNewsPage({ params }) {
     notFound();
   }
 
+  const placePaths = await fetchPlacePaths();
+
   return (
     <>
-      <JsonLd graph={newsGraph(mediaNews)} />
+      <JsonLd graph={newsGraph(mediaNews, placePaths)} />
       <NDHero slug={slug} newsData={mediaNews} />
       <NDContent slug={slug} newsData={mediaNews} />
       <FormSec />

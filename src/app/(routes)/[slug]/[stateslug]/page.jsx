@@ -2,7 +2,21 @@ import Breadcrumbs from "@/components/global/Breadcrumbs";
 import { resolveMicroblogApiUrl } from "@/src/lib/microblogApiMap";
 import { notFound } from "next/navigation";
 import JsonLd from "@/components/global/JsonLd";
-import { stateMicroblogGraph } from "@/src/lib/schema";
+import { fetchPlacePaths, stateMicroblogGraph } from "@/src/lib/schema";
+
+// State hub image, used as the article image when the post has none
+async function fetchStateImage(slug) {
+  try {
+    const res = await fetch(
+      `https://phpstack-725513-2688800.cloudwaysapps.com/cms/wp-json/wp/v2/states?slug=${slug}`,
+      { next: { revalidate: 3600 } },
+    );
+    const json = res.ok ? await res.json() : [];
+    return json[0]?.acf?.state_image || undefined;
+  } catch {
+    return undefined;
+  }
+}
 
 export async function generateMetadata({ params }) {
   const { slug, stateslug } = await params;
@@ -147,9 +161,16 @@ export default async function MicroBlogPage({ params }) {
 
   const postTitle = post?.title?.rendered?.replace(/<[^>]*>/g, "") || "";
 
+  const [fallbackImage, placePaths] = await Promise.all([
+    fetchStateImage(slug),
+    fetchPlacePaths(),
+  ]);
+
   return (
     <>
-      <JsonLd graph={stateMicroblogGraph({ stateSlug: slug, post, stateLabel })} />
+      <JsonLd
+        graph={stateMicroblogGraph({ stateSlug: slug, post, stateLabel, fallbackImage, placePaths })}
+      />
       <div className="w-full pt-[45px] pb-0 bg-white">
         <div className="fix">
           {/* Breadcrumb */}

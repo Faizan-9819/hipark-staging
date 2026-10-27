@@ -9,8 +9,27 @@ export const SITE_URL = "https://www.hiparks.com";
 export const ORG_ID = `${SITE_URL}/#organization`;
 export const WEBSITE_ID = `${SITE_URL}/#website`;
 
-const ORG_REF = { "@id": ORG_ID };
-const WEBSITE_REF = { "@id": WEBSITE_ID };
+export const ORG_NAME = "Horizon Industrial Parks Ltd";
+export const LOGO_URL = `${SITE_URL}/horizonlogo-square.png`;
+
+// References to the homepage's Organization / WebSite nodes. Validators read
+// each page on its own and never follow an @id to another URL, so a bare
+// { "@id" } leaves e.g. an article's author and publisher without a name
+// (Google flags that). Carry the same @id plus the identifying fields;
+// the full node is still defined only on the homepage.
+export const ORG_REF = {
+  "@type": "Organization",
+  "@id": ORG_ID,
+  name: ORG_NAME,
+  url: `${SITE_URL}/`,
+  logo: { "@type": "ImageObject", url: LOGO_URL },
+};
+export const WEBSITE_REF = {
+  "@type": "WebSite",
+  "@id": WEBSITE_ID,
+  name: "Horizon Industrial Parks",
+  url: `${SITE_URL}/`,
+};
 
 /* -------------------------- HELPERS -------------------------- */
 
@@ -20,7 +39,8 @@ export function absoluteUrl(pathOrUrl) {
   if (/^https?:\/\//i.test(pathOrUrl)) return pathOrUrl;
   if (pathOrUrl === "/") return `${SITE_URL}/`;
   const path = pathOrUrl.startsWith("/") ? pathOrUrl : `/${pathOrUrl}`;
-  return `${SITE_URL}${path.replace(/\/+$/, "")}`;
+  // Upper-case percent-escapes (%e2 → %E2) to match the canonical tag
+  return `${SITE_URL}${path.replace(/\/+$/, "").replace(/%[0-9a-f]{2}/gi, (m) => m.toUpperCase())}`;
 }
 
 const ENTITIES = {
@@ -222,13 +242,15 @@ export function organizationNode() {
   return {
     "@type": "Organization",
     "@id": ORG_ID,
-    name: "Horizon Industrial Parks Ltd",
+    name: ORG_NAME,
     alternateName: "HiParks",
     url: `${SITE_URL}/`,
     logo: {
       "@type": "ImageObject",
       "@id": `${SITE_URL}/#logo`,
-      url: `${SITE_URL}/horizonlogo.png`,
+      url: LOGO_URL,
+      width: 512,
+      height: 512,
       caption: "Horizon Industrial Parks",
     },
     image: {
@@ -289,7 +311,12 @@ export function organizationNode() {
       name: "Sector solutions",
       itemListElement: SECTORS.map((s) => ({
         "@type": "Offer",
-        itemOffered: { "@id": `${absoluteUrl(s.path)}#service` },
+        itemOffered: {
+          "@type": "Service",
+          "@id": `${absoluteUrl(s.path)}#service`,
+          name: `${s.name} industrial & logistics real estate`,
+          url: absoluteUrl(s.path),
+        },
       })),
     },
   };
@@ -301,7 +328,8 @@ export function websiteNode() {
     "@id": WEBSITE_ID,
     url: `${SITE_URL}/`,
     name: "Horizon Industrial Parks",
-    publisher: ORG_REF,
+    // The full Organization sits in the same graph here, so a bare @id resolves
+    publisher: { "@id": ORG_ID },
     inLanguage: "en-IN",
   };
 }
@@ -382,7 +410,7 @@ export function placeNode({
   const geo = parseCoordinates(coordinates);
   const stateNode = state ? { "@type": "State", name: state } : undefined;
 
-  return {
+  const place = {
     "@type": types,
     "@id": `${url}#place`,
     name: plainText(name),
@@ -409,21 +437,28 @@ export function placeNode({
         value: plainText(f.value),
       })),
     subjectOf: { "@id": `${url}#webpage` },
-    makesOffer: offer
-      ? {
-          "@type": "Offer",
-          businessFunction: "http://purl.org/goodrelations/v1#LeaseOut",
-          offeredBy: ORG_REF,
-          itemOffered: {
-            "@type": "Product",
-            name: "Grade-A warehouse & built-to-suit space",
-          },
-          areaServed: city
-            ? { "@type": "City", name: plainText(city) }
-            : stateNode,
-        }
-      : undefined,
   };
+
+  // Place has no makesOffer property (only Organization / Person do), so the
+  // lease offer is its own node that points back at the Place.
+  const offerNode = offer
+    ? {
+        "@type": "Offer",
+        "@id": `${url}#offer`,
+        businessFunction: "http://purl.org/goodrelations/v1#LeaseOut",
+        offeredBy: ORG_REF,
+        // Service, not Product: Google validates any Product as a
+        // product snippet and errors without a price, review or rating
+        itemOffered: {
+          "@type": "Service",
+          name: "Grade-A warehouse & built-to-suit space",
+        },
+        availableAtOrFrom: { "@id": `${url}#place` },
+        areaServed: city ? { "@type": "City", name: plainText(city) } : stateNode,
+      }
+    : null;
+
+  return [place, offerNode];
 }
 
 /* -------------------------- MODULE D -------------------------- */
@@ -585,7 +620,7 @@ export function parkPageGraph(park) {
       path,
       [stateSlug && { name: stateName, path: `/${stateSlug}` }, { name, path }].filter(Boolean),
     ),
-    placeNode({
+    ...placeNode({
       path,
       name,
       description: acf.park_hd_para || acf.meta_description,
@@ -629,7 +664,7 @@ export function incityPageGraph(park) {
       { name: "In-City Centres", path: "/incity-centers" },
       { name, path },
     ]),
-    placeNode({
+    ...placeNode({
       path,
       name,
       description: acf.incity_para1 || acf.incity_hd_para,
@@ -666,7 +701,7 @@ export function stateHubGraph({ slug, stateData, parks = [] }) {
       name: stateData.meta?.title || stateName,
       description: stateData.meta?.description,
       image: stateData.hero?.image,
-      about: { "@id": ORG_ID },
+      about: ORG_REF,
       mainEntity: { "@id": `${absoluteUrl(path)}#parklist` },
     }),
     itemListNode({
@@ -687,7 +722,7 @@ export function collectionPageGraph({ path, name, description, crumb, listName, 
       type: "CollectionPage",
       name,
       description,
-      about: { "@id": ORG_ID },
+      about: ORG_REF,
       mainEntity: items.length ? { "@id": `${absoluteUrl(path)}#parklist` } : undefined,
     }),
     items.length ? itemListNode({ path, name: listName, items }) : null,
@@ -699,6 +734,67 @@ export const STATE_HUB_ITEMS = Object.entries(STATES).map(([slug, name]) => ({
   name: `Industrial & logistics parks in ${name}`,
   path: `/${slug}`,
 }));
+
+/* -------------------------- LINKED ENTITIES -------------------------- */
+
+const WP_API = "https://phpstack-725513-2688800.cloudwaysapps.com/cms/wp-json/wp/v2";
+
+/**
+ * Paths of every page that carries a Place node (parks + in-city centres),
+ * e.g. "/oragadam", "/incity-centers/vashi". Cached for an hour.
+ */
+export async function fetchPlacePaths() {
+  const paths = async (type, prefix) => {
+    try {
+      const res = await fetch(`${WP_API}/${type}?per_page=100&_fields=slug`, {
+        next: { revalidate: 3600 },
+      });
+      return res.ok ? (await res.json()).map((p) => `${prefix}${p.slug}`) : [];
+    } catch {
+      return [];
+    }
+  };
+  const [parks, incity] = await Promise.all([
+    paths("parks", "/"),
+    paths("incity_parks", "/incity-centers/"),
+  ]);
+  return new Set([...parks, ...incity]);
+}
+
+// All HTML of a WP post: body plus every string ACF field
+const postHtml = (post) =>
+  [post?.content?.rendered, ...Object.values(post?.acf || {})]
+    .filter((v) => typeof v === "string")
+    .join(" ");
+
+/**
+ * Parks / in-city centres / state hubs that an article links to, for
+ * `mentions`. Only real links count, so the schema matches the page.
+ */
+export function linkedEntities(html, placePaths = new Set()) {
+  const seen = new Set();
+  const out = [];
+  for (const [, href] of String(html || "").matchAll(/href=["']([^"']+)["']/g)) {
+    let path;
+    try {
+      const u = new URL(href, SITE_URL);
+      if (!/(^|\.)hiparks\.com$/i.test(u.hostname)) continue;
+      path = decodeURI(u.pathname).replace(/\/+$/, "") || "/";
+    } catch {
+      continue;
+    }
+    if (seen.has(path)) continue;
+    seen.add(path);
+    if (placePaths.has(path)) {
+      // The Place node lives on the park's own page; carry its URL so the
+      // reference still identifies something when this page is read alone
+      out.push({ "@type": "Place", "@id": `${absoluteUrl(path)}#place`, url: absoluteUrl(path) });
+    } else if (STATES[path.slice(1)]) {
+      out.push({ "@type": "State", name: STATES[path.slice(1)] });
+    }
+  }
+  return out;
+}
 
 /* -------------------------- ARTICLE MAPPERS -------------------------- */
 
@@ -719,7 +815,7 @@ function articlePageGraph({ path, type, title, metaTitle, description, image, pa
 }
 
 /** /blog/[slug] — BlogPosting */
-export function blogPostGraph(blog) {
+export function blogPostGraph(blog, placePaths) {
   const acf = blog.acf || {};
   const category = blog._embedded?.["wp:term"]?.[0]?.[0]?.name || acf.category_id;
   return articlePageGraph({
@@ -734,18 +830,34 @@ export function blogPostGraph(blog) {
     dateModified: wpModified(blog),
     section: category,
     keywords: acf.meta_keyword,
+    about: category ? [{ "@type": "Thing", name: plainText(category) }] : [],
+    mentions: linkedEntities(postHtml(blog), placePaths),
   });
 }
 
+// Drop utm_* params from an external URL
+function stripTracking(href) {
+  try {
+    const u = new URL(href);
+    [...u.searchParams.keys()]
+      .filter((k) => k.startsWith("utm_"))
+      .forEach((k) => u.searchParams.delete(k));
+    return u.toString();
+  } catch {
+    return href;
+  }
+}
+
 /**
- * /news/[slug] — NewsArticle. Items summarise coverage on an external
- * platform, so the source is cited via isBasedOn.
+ * /news/[slug]. Third-party coverage of Horizon is an Article that cites
+ * the external source via isBasedOn; Horizon's own items stay NewsArticle.
  */
-export function newsGraph(news) {
+export function newsGraph(news, placePaths) {
   const acf = news.acf || {};
+  const external = acf.m_news_link && !acf.m_news_link.includes("hiparks.com");
   return articlePageGraph({
     path: `/news/${news.slug}`,
-    type: "NewsArticle",
+    type: external ? "Article" : "NewsArticle",
     title: news.title?.rendered,
     metaTitle: acf.m_news_meta_title,
     description: acf.m_news_meta_description || truncate(plainText(acf.m_news_description), 300),
@@ -754,21 +866,23 @@ export function newsGraph(news) {
     datePublished: toIsoDate(acf.m_news_publish_date) || wpPublished(news),
     dateModified: wpModified(news),
     keywords: acf.m_news_meta_keywords,
-    isBasedOn:
-      acf.m_news_link && !acf.m_news_link.includes("hiparks.com")
-        ? {
-            "@type": "CreativeWork",
-            url: acf.m_news_link,
-            publisher: acf.m_news_platform
-              ? { "@type": "Organization", name: plainText(acf.m_news_platform) }
-              : undefined,
-          }
-        : undefined,
+    // Each item is coverage of Horizon
+    about: [ORG_REF],
+    mentions: linkedEntities(postHtml(news), placePaths),
+    isBasedOn: external
+      ? {
+          "@type": "CreativeWork",
+          url: stripTracking(acf.m_news_link),
+          publisher: acf.m_news_platform
+            ? { "@type": "Organization", name: plainText(acf.m_news_platform) }
+            : undefined,
+        }
+      : undefined,
   });
 }
 
 /** /press-release/[slug] — Horizon's own announcements: NewsArticle */
-export function pressReleaseGraph(pr) {
+export function pressReleaseGraph(pr, placePaths) {
   const acf = pr.acf || {};
   return articlePageGraph({
     path: `/press-release/${pr.slug}`,
@@ -780,11 +894,13 @@ export function pressReleaseGraph(pr) {
     parent: { name: "Press Release", path: "/media" },
     datePublished: toIsoDate(acf.pr_publish_date) || wpPublished(pr),
     dateModified: wpModified(pr),
+    about: [ORG_REF],
+    mentions: linkedEntities(postHtml(pr), placePaths),
   });
 }
 
 /** /case-studies-and-client-testimonials/[slug] — Article */
-export function caseStudyGraph(cs) {
+export function caseStudyGraph(cs, placePaths) {
   const acf = cs.acf || {};
   return articlePageGraph({
     path: `/case-studies-and-client-testimonials/${cs.slug}`,
@@ -798,12 +914,16 @@ export function caseStudyGraph(cs) {
     dateModified: wpModified(cs),
     section: acf.industry,
     about: acf.industry ? [{ "@type": "Thing", name: plainText(acf.industry) }] : [],
+    mentions: linkedEntities(postHtml(cs), placePaths),
   });
 }
 
 /** /[state]/[article] — state microblog: BlogPosting about the state */
-export function stateMicroblogGraph({ stateSlug, post, stateLabel }) {
+export function stateMicroblogGraph({ stateSlug, post, stateLabel, fallbackImage, placePaths }) {
   const stateName = STATES[stateSlug] || stateLabel;
+  const acfImage = Object.entries(post.acf || {}).find(([k]) =>
+    k.endsWith("_micro_blog_image"),
+  )?.[1];
   return articlePageGraph({
     path: `/${stateSlug}/${post.slug}`,
     type: "BlogPosting",
@@ -811,11 +931,18 @@ export function stateMicroblogGraph({ stateSlug, post, stateLabel }) {
     description: Object.entries(post.acf || {}).find(([k]) =>
       k.endsWith("_micro_blog_meta_description"),
     )?.[1],
+    // The post's own image when the CMS has one, else the state hub image
+    image: imageUrl(acfImage) || fallbackImage,
     parent: { name: stateName, path: `/${stateSlug}` },
     datePublished: wpPublished(post),
     dateModified: wpModified(post),
     about: [{ "@type": "State", name: stateName }],
-    isPartOf: { "@id": `${absoluteUrl(`/${stateSlug}`)}#webpage` },
+    mentions: linkedEntities(postHtml(post), placePaths),
+    isPartOf: {
+      "@type": "CollectionPage",
+      "@id": `${absoluteUrl(`/${stateSlug}`)}#webpage`,
+      url: absoluteUrl(`/${stateSlug}`),
+    },
   });
 }
 

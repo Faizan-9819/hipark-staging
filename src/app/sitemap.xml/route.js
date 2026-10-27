@@ -216,6 +216,7 @@
 import { readdir } from "fs/promises";
 import { join } from "path";
 import { getMicroblogSitemapSources } from "@/src/lib/microblogApiMap";
+import nextConfig from "@/next.config.mjs";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -420,8 +421,9 @@ async function getAllPages(dir, currentPath = "") {
       const fullPath = join(dir, entry.name);
 
       if (entry.isDirectory()) {
+        // URL paths always use "/" (path.join would give "\\" on Windows)
         urls.push(
-          ...(await getAllPages(fullPath, join(currentPath, entry.name))),
+          ...(await getAllPages(fullPath, `${currentPath}/${entry.name}`)),
         );
       } else if (entry.name === "page.js" || entry.name === "page.jsx") {
         let url = currentPath || "/";
@@ -455,8 +457,30 @@ const escapeXml = (unsafe) => {
   });
 };
 
+// Redirect sources from next.config.mjs as regexes ("/:path*" → any suffix),
+// so URLs that 308 elsewhere are never listed in the sitemap
+async function getRedirectMatchers() {
+  try {
+    const redirects = (await nextConfig.redirects?.()) || [];
+    return redirects
+      .filter((r) => !r.has && !r.missing)
+      .map((r) => {
+        const pattern = r.source
+          .replace(/(.)\/$/, "$1")
+          .replace(/[.+?^${}()|[\]\\]/g, "\\$&")
+          .replace(/\/:\w+\*/g, "(?:/.*)?")
+          .replace(/:\w+/g, "[^/]+");
+        return new RegExp(`^${pattern}/?$`);
+      });
+  } catch (err) {
+    console.error("Sitemap redirects read error:", err.message);
+    return [];
+  }
+}
+
 export async function GET() {
-  const staticUrls = await getAllPages(ROUTES_ROOT);
+  // The homepage lives in src/app/page.js, outside (routes), so add it here
+  const staticUrls = ["/", ...(await getAllPages(ROUTES_ROOT))];
 
   const staticEntries = staticUrls
     .filter((url) => !url.includes("/phone-enquiry"))
@@ -472,9 +496,10 @@ export async function GET() {
     console.error("Dynamic sitemap fetch error:", err.message);
   }
 
-  const allEntries = [...staticEntries, ...dynamicEntries].sort((a, b) =>
-    a.url.localeCompare(b.url),
-  );
+  const redirectMatchers = await getRedirectMatchers();
+  const allEntries = [...staticEntries, ...dynamicEntries]
+    .filter(({ url }) => !redirectMatchers.some((re) => re.test(url)))
+    .sort((a, b) => a.url.localeCompare(b.url));
 
   const xml = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
