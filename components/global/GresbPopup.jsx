@@ -11,10 +11,17 @@ import { motion, AnimatePresence } from "framer-motion";
 //   is cleared automatically when the tab/browser is closed.
 // Closing the popup ends the popup visit and restarts the 5-day gap, so it
 // won't open again on any page until 5 days have passed.
-const STORAGE_KEY = "hiparks_gresb_popup_last_shown";
-const SESSION_KEY = "hiparks_gresb_popup_session";
-const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
+//
+// 5-day timing is disabled for now: the popup opens on every page load/refresh.
+// Closing it hides it until the next refresh. To bring the 5-day gap back,
+// uncomment the storage code below and swap the logic in the useEffect.
+// const STORAGE_KEY = "hiparks_gresb_popup_last_shown";
+// const SESSION_KEY = "hiparks_gresb_popup_session";
+// const FIVE_DAYS_MS = 5 * 24 * 60 * 60 * 1000;
 const OPEN_DELAY_MS = 1500;
+
+// Module-level flag: survives client-side page changes but resets on refresh
+let dismissedThisLoad = false;
 
 // The design is an 800x800 artboard. Every size below is the pixel value from
 // that artboard multiplied by --u, so the popup keeps the exact proportions of
@@ -35,46 +42,48 @@ const stats = [
 
 // Returns true if the popup should open on the current page, and starts a new
 // popup visit when 5 days have passed since the last one
-const shouldShowOnThisPage = () => {
-  try {
-    if (sessionStorage.getItem(SESSION_KEY)) return true;
-
-    const lastShown = Number(localStorage.getItem(STORAGE_KEY));
-    if (lastShown && Date.now() - lastShown < FIVE_DAYS_MS) return false;
-
-    localStorage.setItem(STORAGE_KEY, String(Date.now()));
-    sessionStorage.setItem(SESSION_KEY, "1");
-    return true;
-  } catch {
-    // Storage blocked (private mode, etc.) - don't show rather than show forever
-    return false;
-  }
-};
+// const shouldShowOnThisPage = () => {
+//   try {
+//     if (sessionStorage.getItem(SESSION_KEY)) return true;
+//
+//     const lastShown = Number(localStorage.getItem(STORAGE_KEY));
+//     if (lastShown && Date.now() - lastShown < FIVE_DAYS_MS) return false;
+//
+//     localStorage.setItem(STORAGE_KEY, String(Date.now()));
+//     sessionStorage.setItem(SESSION_KEY, "1");
+//     return true;
+//   } catch {
+//     // Storage blocked (private mode, etc.) - don't show rather than show forever
+//     return false;
+//   }
+// };
 
 // Called when the visitor closes the popup: stop showing it on other pages and
 // start the 5-day gap from now
-const markDismissed = () => {
-  try {
-    sessionStorage.removeItem(SESSION_KEY);
-    localStorage.setItem(STORAGE_KEY, String(Date.now()));
-  } catch {
-    // Storage blocked - nothing to remember
-  }
-};
+// const markDismissed = () => {
+//   try {
+//     sessionStorage.removeItem(SESSION_KEY);
+//     localStorage.setItem(STORAGE_KEY, String(Date.now()));
+//   } catch {
+//     // Storage blocked - nothing to remember
+//   }
+// };
 
 const GresbPopup = () => {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
   const close = () => {
-    markDismissed();
+    // markDismissed();
+    dismissedThisLoad = true;
     setIsOpen(false);
   };
 
-  // Re-check on every page change, so during a popup visit it opens on each page
+  // Re-check on every page change, so until it's closed it opens on each page
   useEffect(() => {
     setIsOpen(false);
-    if (!shouldShowOnThisPage()) return;
+    // if (!shouldShowOnThisPage()) return;
+    if (dismissedThisLoad) return;
     const timer = setTimeout(() => setIsOpen(true), OPEN_DELAY_MS);
     return () => clearTimeout(timer);
   }, [pathname]);

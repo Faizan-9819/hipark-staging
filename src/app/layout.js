@@ -233,7 +233,7 @@ export default function RootLayout({ children }) {
             <ClientWrapper>{children}</ClientWrapper>
             <Footer />
 
-            {/* GRESB "Ranked #1" popup - shows once every 5 days on any page */}
+            {/* GRESB "Ranked #1" popup - shows on every page load/refresh */}
             <GresbPopup />
 
             {/* ✅ VAPT Fix: Cookie Consent Banner */}
